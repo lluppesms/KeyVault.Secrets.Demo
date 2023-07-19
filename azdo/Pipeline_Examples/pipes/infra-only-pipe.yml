@@ -1,0 +1,58 @@
+# ------------------------------------------------------------------------------------------------------------------------
+# Pipeline Template to deploy Azure Resources and/or Secrets
+# ------------------------------------------------------------------------------------------------------------------------
+parameters:
+- name: runResourceDeploy
+  default: 'true'
+- name: resourceTemplateFolderName
+  default: 'infra'
+- name: resourceTemplateFileName
+  default: 'main-create-resources.bicep'
+
+- name: runSecretDeploy
+  default: 'true'
+- name: secretTemplateFolderName
+  default: 'infra/Bicep'
+- name: secretTemplateFileName
+  default: 'main-create-secrets.bicep'
+
+# ----------------------------------------------------------------------------------------------------
+stages:
+- ${{ if and(eq(lower(parameters.runResourceDeploy), 'true'), eq(lower(parameters.runSecretDeploy), 'true')) }}:
+  - stage: CreateResources
+    displayName: Create Resources
+    jobs:
+    - template: templates/create-infra-template.yml
+      parameters:
+        deploymentType: 'Resources'
+        templateFolderName: ${{ parameters.resourceTemplateFolderName }}
+        templateFileName: ${{ parameters.resourceTemplateFileName }}
+
+  - stage: CreateSecrets
+    displayName: Create Secrets
+    jobs:
+    - template: templates/create-infra-template.yml
+      parameters:
+        deploymentType: 'Secrets'
+        templateFolderName: ${{ parameters.secretTemplateFolderName }}
+        templateFileName: ${{ parameters.secretTemplateFileName }}
+
+- ${{ if and(eq(lower(parameters.runResourceDeploy), 'true'), eq(lower(parameters.runSecretDeploy), 'false')) }}:
+  - stage: CreateResources
+    displayName: Create Resources
+    jobs:
+    - template: templates/create-infra-template.yml
+      parameters:
+        deploymentType: 'Resources'
+        templateFolderName: ${{ parameters.resourceTemplateFolderName }}
+        templateFileName: ${{ parameters.resourceTemplateFileName }}
+
+- ${{ if and(eq(lower(parameters.runResourceDeploy), 'false'), eq(lower(parameters.runSecretDeploy), 'true')) }}:
+  - stage: CreateSecrets
+    displayName: Create Secrets
+    jobs:
+    - template: templates/create-infra-template.yml
+      parameters:
+        deploymentType: 'Secrets'
+        templateFolderName: ${{ parameters.secretTemplateFolderName }}
+        templateFileName: ${{ parameters.secretTemplateFileName }}
