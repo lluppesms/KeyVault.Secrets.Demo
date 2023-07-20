@@ -11,7 +11,7 @@ param expirationDate string = dateTimeAdd(utcNow(), 'P2Y')
 // --------------------------------------------------------------------------------
 resource serviceBusResource 'Microsoft.ServiceBus/namespaces@2021-11-01' existing = { name: serviceBusName }
 var serviceBusEndpoint = '${serviceBusResource.id}/AuthorizationRules/RootManageSharedAccessKey' 
-var serviceBusConnectionString       = 'Endpoint=sb://${serviceBusResource.name}.servicebus.windows.net/;SharedAccessKeyName=${accessKeyName};SharedAccessKey=${listKeys(serviceBusEndpoint, serviceBusResource.apiVersion).primaryKey}' 
+var serviceBusConnectionString = 'Endpoint=sb://${serviceBusResource.name}.servicebus.windows.net/;SharedAccessKeyName=${accessKeyName};SharedAccessKey=${listKeys(serviceBusEndpoint, serviceBusResource.apiVersion).primaryKey}' 
 
 // --------------------------------------------------------------------------------
 resource keyvaultResource 'Microsoft.KeyVault/vaults@2021-11-01-preview' existing = { 
