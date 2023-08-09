@@ -1,14 +1,16 @@
 // --------------------------------------------------------------------------------
 // This BICEP file will create KeyVault secret for a Service Bus connection
-//   but ONLY if it does not exist in the existingSecretNames variable with ; before and aft.
+//   if existingSecretNames list is supplied: 
+//     ONLY create if secretName is not in existingSecretNames list
+//     OR forceSecretCreation is true
 // --------------------------------------------------------------------------------
 param keyVaultName string = 'myKeyVault'
 param secretName string = 'mySecretName'
 param serviceBusName string = 'myservicebusname'
 param accessKeyName string = 'RootManageSharedAccessKey'
-param existingSecretNames string = ''
 param enabledDate string = utcNow()
 param expirationDate string = dateTimeAdd(utcNow(), 'P2Y')
+param existingSecretNames string = ''
 param forceSecretCreation bool = false
 
 // --------------------------------------------------------------------------------
@@ -19,8 +21,14 @@ var serviceBusEndpoint = '${serviceBusResource.id}/AuthorizationRules/${accessKe
 var serviceBusKey = '${listKeys(serviceBusEndpoint, serviceBusResource.apiVersion).primaryKey}'
 var serviceBusConnectionString = 'Endpoint=sb://${serviceBusResource.name}.servicebus.windows.net/;SharedAccessKeyName=${accessKeyName};SharedAccessKey=${serviceBusKey}' 
 
+// --------------------------------------------------------------------------------
+resource keyVaultResource 'Microsoft.KeyVault/vaults@2022-07-01' existing = {
+  name: keyVaultName
+}
+
 resource createSecretValue 'Microsoft.KeyVault/vaults/secrets@2021-04-01-preview' = if (!secretExists || forceSecretCreation) {
-  name: '${keyVaultName}/${secretName}'
+  name: secretName
+  parent: keyVaultResource
   properties: {
     value: serviceBusConnectionString
     attributes: {

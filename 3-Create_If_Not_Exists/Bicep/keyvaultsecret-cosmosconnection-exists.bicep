@@ -1,13 +1,15 @@
 // --------------------------------------------------------------------------------
-// This BICEP file will create KeyVault secret for a Cosmos connection
-//   but ONLY if it does not exist in the existingSecretNames variable with ; before and aft.
+// This BICEP file will create a KeyVault secret for a Cosmos connection
+//   if existingSecretNames list is supplied: 
+//     ONLY create if secretName is not in existingSecretNames list
+//     OR forceSecretCreation is true
 // --------------------------------------------------------------------------------
 param keyVaultName string = 'myKeyVault'
 param secretName string = 'mySecretName'
 param cosmosAccountName string = 'mycosmosname'
-param existingSecretNames string = ''
 param enabledDate string = utcNow()
 param expirationDate string = dateTimeAdd(utcNow(), 'P2Y')
+param existingSecretNames string = ''
 param forceSecretCreation bool = false
 
 // --------------------------------------------------------------------------------
@@ -17,8 +19,14 @@ resource cosmosResource 'Microsoft.DocumentDB/databaseAccounts@2022-02-15-previe
 var cosmosKey = cosmosResource.listKeys().primaryMasterKey
 var cosmosConnectionString = 'AccountEndpoint=https://${cosmosAccountName}.documents.azure.com:443/;AccountKey=${cosmosKey}'
 
+// --------------------------------------------------------------------------------
+resource keyVaultResource 'Microsoft.KeyVault/vaults@2022-07-01' existing = {
+  name: keyVaultName
+}
+
 resource createSecretValue 'Microsoft.KeyVault/vaults/secrets@2021-04-01-preview' = if (!secretExists || forceSecretCreation) {
-  name: '${keyVaultName}/${secretName}'
+  name: secretName
+  parent: keyVaultResource
   properties: {
     value: cosmosConnectionString
     attributes: {

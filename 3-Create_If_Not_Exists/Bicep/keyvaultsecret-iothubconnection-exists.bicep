@@ -1,13 +1,15 @@
 // --------------------------------------------------------------------------------
-// This BICEP file will create KeyVault secret for a IoT Hub Connection
-//   but ONLY if it does not exist in the existingSecretNames variable with ; before and aft.
+// This BICEP file will create KeyVault secret for an IoT Hub Connection
+//   if existingSecretNames list is supplied: 
+//     ONLY create if secretName is not in existingSecretNames list
+//     OR forceSecretCreation is true
 // --------------------------------------------------------------------------------
 param keyVaultName string = 'myKeyVault'
 param secretName string = 'mySecretName'
 param iotHubName string = 'myiothubname'
-param existingSecretNames string = ''
 param enabledDate string = utcNow()
 param expirationDate string = dateTimeAdd(utcNow(), 'P2Y')
+param existingSecretNames string = ''
 param forceSecretCreation bool = false
 
 // --------------------------------------------------------------------------------
@@ -17,8 +19,14 @@ resource iotHubResource 'Microsoft.Devices/IotHubs@2021-07-02' existing = { name
 var iotKey = iotHubResource.listKeys().value[0].primaryKey
 var iotHubConnectionString = 'HostName=${iotHubResource.name}.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey=${iotKey}'
 
+// --------------------------------------------------------------------------------
+resource keyVaultResource 'Microsoft.KeyVault/vaults@2022-07-01' existing = {
+  name: keyVaultName
+}
+
 resource createSecretValue 'Microsoft.KeyVault/vaults/secrets@2021-04-01-preview' = if (!secretExists || forceSecretCreation) {
-  name: '${keyVaultName}/${secretName}'
+  name: secretName
+  parent: keyVaultResource
   properties: {
     value: iotHubConnectionString
     attributes: {
